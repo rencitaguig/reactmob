@@ -6,6 +6,7 @@ const UserSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   profileImage: { type: String }, // Add profileImage field
+  role: { type: String, enum: ["user", "admin"], default: "user" }, // Add role field with default value
 });
 
 // Hash password before saving
