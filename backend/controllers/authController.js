@@ -1,24 +1,20 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const cloudinary = require("cloudinary").v2;
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-    let profileImage = null;
-
-    console.log(req.body);
-
-    if (req.files && req.files.image) {
-      const result = await cloudinary.uploader.upload(req.files.image.tempFilePath);
-      profileImage = result.secure_url;
-    }
+    const { name, email, password, profileImage } = req.body;
 
     const userExists = await User.findOne({ email });
     if (userExists) return res.status(400).json({ message: "Email already exists" });
 
-    const user = new User({ name, email, password, profileImage });
+    const user = new User({ 
+      name, 
+      email, 
+      password,
+      profileImage // Store base64 image string directly
+    });
     await user.save();
 
     res.status(201).json({ message: "User registered successfully" });
@@ -47,3 +43,28 @@ exports.login = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+// Add to authController.js
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name, email, profileImage } = req.body;
+    const userId = req.user.userId; // From auth middleware
+
+    const updateData = { name, email };
+    if (profileImage) {
+      updateData.profileImage = profileImage;
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true }
+    ).select('-password');
+
+    res.json(user);
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+

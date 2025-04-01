@@ -1,34 +1,21 @@
 const Product = require("../models/Product");
-const cloudinary = require("cloudinary").v2;
 const jwt = require("jsonwebtoken");
 
 exports.createProduct = async (req, res) => {
   try {
-    const { name, description, price, category } = req.body;
+    const { name, description, price, category, image } = req.body;
 
     if (!name || !price || !category) {
       return res.status(400).json({ message: "name, price, and category are required." });
     }
 
-    let imageUrl = null;
-    if (req.file) {
-      // Wrap cloudinary upload_stream in a promise to wait for the upload to finish
-      imageUrl = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          { resource_type: "image" },
-          (error, result) => {
-            if (error) {
-              console.error("Error uploading image to Cloudinary:", error);
-              return reject(error);
-            }
-            resolve(result.secure_url);
-          }
-        );
-        uploadStream.end(req.file.buffer);
-      });
-    }
-
-    const product = new Product({ name, description, price, category, image: imageUrl });
+    const product = new Product({ 
+      name, 
+      description, 
+      price, 
+      category, 
+      image // Store base64 image string directly
+    });
     await product.save();
 
     return res.status(201).json(product);
