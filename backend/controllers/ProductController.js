@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 
 exports.createProduct = async (req, res) => {
   try {
-    const { name, description, price, category, image } = req.body;
+    const { name, description, price, category, image, banner  } = req.body;
 
     if (!name || !price || !category) {
       return res.status(400).json({ message: "name, price, and category are required." });
@@ -14,7 +14,8 @@ exports.createProduct = async (req, res) => {
       description, 
       price, 
       category, 
-      image // Store base64 image string directly
+      image,
+      banner: banner || 'none'
     });
     await product.save();
 
