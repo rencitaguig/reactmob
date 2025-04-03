@@ -3,10 +3,15 @@ const jwt = require("jsonwebtoken");
 
 exports.createProduct = async (req, res) => {
   try {
-    const { name, description, price, category, image, banner  } = req.body;
+    const { name, description, price, category, image, banner } = req.body;
 
     if (!name || !price || !category) {
       return res.status(400).json({ message: "name, price, and category are required." });
+    }
+
+    // Check image size if present
+    if (image && image.length > 5 * 1024 * 1024) { // 5MB limit for base64 images
+      return res.status(413).json({ message: "Image size too large. Please use an image under 5MB." });
     }
 
     const product = new Product({ 
