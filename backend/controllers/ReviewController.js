@@ -8,6 +8,11 @@ exports.createReview = async (req, res) => {
       return res.status(400).json({ message: "All fields are required." });
     }
 
+    // Validate star rating is between 1-5
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({ message: "Rating must be between 1 and 5 stars." });
+    }
+
     if (userId !== req.user.userId) {
       return res.status(403).json({ message: "You are not authorized to create a review for this user" });
     }
@@ -15,7 +20,14 @@ exports.createReview = async (req, res) => {
     const newReview = new Review({ userId, productId, rating, comment });
     await newReview.save();
 
-    res.status(201).json({ message: "Review created successfully", review: newReview });
+    const populatedReview = await Review.findById(newReview._id)
+      .populate("userId", "name")
+      .populate("productId", "name");
+
+    res.status(201).json({ 
+      message: "Review created successfully", 
+      review: populatedReview 
+    });
   } catch (error) {
     console.error("Error creating review:", error);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -24,7 +36,9 @@ exports.createReview = async (req, res) => {
 
 exports.getReviews = async (req, res) => {
   try {
-    const reviews = await Review.find().populate("userId", "name").populate("productId", "name");
+    const reviews = await Review.find()
+      .populate("userId", "name _id") // Add _id to populated fields
+      .populate("productId", "name");
     res.json(reviews);
   } catch (error) {
     console.error("Error fetching reviews:", error);
@@ -47,10 +61,19 @@ exports.getReview = async (req, res) => {
 exports.updateReview = async (req, res) => {
   try {
     const { rating, comment } = req.body;
-    if (!rating || !comment) return res.status(400).json({ message: "Rating and comment are required" });
+    if (!rating || !comment) {
+      return res.status(400).json({ message: "Rating and comment are required" });
+    }
+
+    // Validate star rating is between 1-5
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({ message: "Rating must be between 1 and 5 stars." });
+    }
 
     const review = await Review.findById(req.params.id);
-    if (!review) return res.status(404).json({ message: "Review not found" });
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
+    }
 
     if (review.userId.toString() !== req.user.userId) {
       return res.status(403).json({ message: "You are not authorized to update this review" });
@@ -60,7 +83,14 @@ exports.updateReview = async (req, res) => {
     review.comment = comment;
     await review.save();
 
-    res.json({ message: "Review updated successfully", review });
+    const updatedReview = await Review.findById(review._id)
+      .populate("userId", "name")
+      .populate("productId", "name");
+
+    res.json({ 
+      message: "Review updated successfully", 
+      review: updatedReview 
+    });
   } catch (error) {
     console.error("Error updating review:", error);
     res.status(500).json({ message: "Server error" });
