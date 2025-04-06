@@ -11,7 +11,10 @@ const OrderSchema = new mongoose.Schema({
         }
     ],
     totalPrice: { type: Number, required: true },
+    originalPrice: { type: Number, required: true },
+    shippingFee: { type: Number, required: true, default: 75 },
     status: { type: String, enum: ["Pending", "Shipped", "Delivered", "Cancelled"], default: "Pending" },
+    paymentMethod: { type: String, enum: ["Cash on Delivery", "Online Payment"], required: true },
     createdAt: { type: Date, default: Date.now }
 });
 

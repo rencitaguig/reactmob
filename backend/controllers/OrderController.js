@@ -1,21 +1,52 @@
 const Order = require("../models/Order");
 
 exports.createOrder = async (req, res) => {
-    try {
-        const { userId, items, totalPrice } = req.body;
-
-        if (!userId || !items || items.length === 0 || !totalPrice) {
-            return res.status(400).json({ message: "User ID, items, and total price are required." });
-        }
-
-        const newOrder = new Order({ userId, items, totalPrice });
-        await newOrder.save();
-
-        res.status(201).json({ message: "Order created successfully", order: newOrder });
-    } catch (error) {
-        console.error("Error creating order:", error); // Debugging: log the error details
-        res.status(500).json({ message: "Server error", error: error.message });
+  try {
+    // Validate required fields
+    if (!req.body.userId || !req.body.items || !req.body.paymentMethod) {
+      return res.status(400).json({ 
+        message: "Missing required fields" 
+      });
     }
+
+    // Calculate total price from items to ensure accuracy
+    const itemsTotal = req.body.items.reduce((sum, item) => 
+      sum + (Number(item.price) * Number(item.quantity)), 0
+    );
+    
+    const shippingFee = Number(req.body.shippingFee || 75);
+    const totalPrice = itemsTotal + shippingFee;
+
+    // Ensure totalPrice is a valid number
+    if (isNaN(totalPrice)) {
+      return res.status(400).json({ 
+        message: "Invalid price calculation" 
+      });
+    }
+
+    const orderData = {
+      userId: req.body.userId,
+      items: req.body.items,
+      totalPrice: totalPrice,
+      originalPrice: itemsTotal,
+      shippingFee: shippingFee,
+      paymentMethod: req.body.paymentMethod
+    };
+
+    const order = new Order(orderData);
+    await order.save();
+
+    res.status(201).json({ 
+      message: "Order created successfully",
+      order 
+    });
+  } catch (error) {
+    console.error("Error creating order:", error);
+    res.status(500).json({ 
+      message: "Failed to create order",
+      error: error.message 
+    });
+  }
 };
 
 exports.getOrders = async (req, res) => {
@@ -51,7 +82,7 @@ exports.updateOrderStatus = async (req, res) => {
 
         res.json({ message: "Order updated successfully", order: updatedOrder });
     } catch (error) {
-        console.error("Error updating order:", error); // Debugging: log the error details
+        console.error("Error updating order:", error);
         res.status(500).json({ message: "Server error", error: error.message });
     }
 };
