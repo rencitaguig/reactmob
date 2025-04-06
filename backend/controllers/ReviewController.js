@@ -61,22 +61,15 @@ exports.getReview = async (req, res) => {
 exports.updateReview = async (req, res) => {
   try {
     const { rating, comment } = req.body;
-    if (!rating || !comment) {
-      return res.status(400).json({ message: "Rating and comment are required" });
-    }
-
-    // Validate star rating is between 1-5
-    if (rating < 1 || rating > 5) {
-      return res.status(400).json({ message: "Rating must be between 1 and 5 stars." });
-    }
-
     const review = await Review.findById(req.params.id);
+    
     if (!review) {
       return res.status(404).json({ message: "Review not found" });
     }
 
+    // Check if the logged-in user owns this review
     if (review.userId.toString() !== req.user.userId) {
-      return res.status(403).json({ message: "You are not authorized to update this review" });
+      return res.status(403).json({ message: "Not authorized to update this review" });
     }
 
     review.rating = rating;
@@ -84,13 +77,10 @@ exports.updateReview = async (req, res) => {
     await review.save();
 
     const updatedReview = await Review.findById(review._id)
-      .populate("userId", "name")
+      .populate("userId", "name _id")
       .populate("productId", "name");
 
-    res.json({ 
-      message: "Review updated successfully", 
-      review: updatedReview 
-    });
+    res.json(updatedReview);
   } catch (error) {
     console.error("Error updating review:", error);
     res.status(500).json({ message: "Server error" });
@@ -100,16 +90,33 @@ exports.updateReview = async (req, res) => {
 exports.deleteReview = async (req, res) => {
   try {
     const review = await Review.findById(req.params.id);
-    if (!review) return res.status(404).json({ message: "Review not found" });
-
-    if (review.userId.toString() !== req.user.userId) {
-      return res.status(403).json({ message: "You are not authorized to delete this review" });
+    
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
     }
 
-    await Review.deleteOne({ _id: req.params.id }); // Use deleteOne method
+    // Check if the logged-in user owns this review
+    if (review.userId.toString() !== req.user.userId) {
+      return res.status(403).json({ message: "Not authorized to delete this review" });
+    }
+
+    await Review.findByIdAndDelete(req.params.id);
     res.json({ message: "Review deleted successfully" });
   } catch (error) {
     console.error("Error deleting review:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getReviewsByProduct = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const reviews = await Review.find({ productId })
+      .populate("userId", "name _id") // Make sure to populate user ID
+      .populate("productId", "name");
+    res.json(reviews);
+  } catch (error) {
+    console.error("Error fetching reviews by product:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
