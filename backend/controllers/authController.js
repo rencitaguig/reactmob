@@ -35,7 +35,12 @@ exports.login = async (req, res) => {
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    
+    // Update user's pushToken when logging in
+    await User.findByIdAndUpdate(user._id, { pushToken: token });
+
     console.log("Generated token:", token); // Debugging: log the generated token
+    console.log("Updated user pushToken"); // Debugging: confirm pushToken update
 
     res.json({ token, user });
   } catch (error) {
@@ -44,7 +49,24 @@ exports.login = async (req, res) => {
   }
 };
 
-// Add to authController.js
+exports.logout = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    await User.findByIdAndUpdate(userId, { pushToken: null });
+    console.log('PushToken cleared for user:', userId);
+
+    res.json({ 
+      message: "Logged out successfully",
+      clearToken: true 
+    });
+
+  } catch (error) {
+    console.error("Error during logout:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 exports.updateProfile = async (req, res) => {
   try {
     const { name, email, profileImage } = req.body;

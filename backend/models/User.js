@@ -7,6 +7,7 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: true },
   profileImage: { type: String }, // Will store base64 image string
   role: { type: String, enum: ["user", "admin"], default: "user" },
+  pushToken: { type: String, default: null } // Add this field
 });
 
 // Hash password before saving
