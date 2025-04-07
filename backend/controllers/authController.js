@@ -69,10 +69,17 @@ exports.logout = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, email, profileImage } = req.body;
+    const { name, email, profileImage, address } = req.body;
     const userId = req.user.userId; // From auth middleware
 
-    const updateData = { name, email };
+    console.log('Received update data:', { name, email, address }); // Debug log
+
+    const updateData = { 
+      name, 
+      email,
+      address // Make sure address is included
+    };
+    
     if (profileImage) {
       updateData.profileImage = profileImage;
     }
@@ -83,10 +90,11 @@ exports.updateProfile = async (req, res) => {
       { new: true }
     ).select('-password');
 
+    console.log('Updated user:', user); // Debug log
     res.json(user);
   } catch (error) {
     console.error("Error updating profile:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 

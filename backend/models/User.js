@@ -5,9 +5,10 @@ const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  profileImage: { type: String }, // Will store base64 image string
+  profileImage: { type: String },
+  address: { type: String },
   role: { type: String, enum: ["user", "admin"], default: "user" },
-  pushToken: { type: String, default: null } // Add this field
+  pushToken: { type: String, default: null }
 });
 
 // Hash password before saving
